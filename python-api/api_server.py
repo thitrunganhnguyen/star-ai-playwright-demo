@@ -144,7 +144,6 @@ def ai_test():
             "usedFallback": used_fallback,
             "generatedSteps": steps,
             "executionResult": execution_result,
-            "screenshotHint": "Screenshots should be available in the local test-results folder."
         })
 
     except Exception as error:
