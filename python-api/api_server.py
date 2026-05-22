@@ -5,7 +5,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
-from ai_agent import generate_test_steps, fallback_test_steps
+from ai_agent import generate_test_steps
 
 
 MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:8931/mcp")
@@ -14,17 +14,12 @@ app = Flask(__name__)
 CORS(app)
 
 
-def ensure_test_results_folder():
-    os.makedirs("/app/test-results", exist_ok=True)
-
-
 def is_mcp_error(result):
     return getattr(result, "isError", False)
 
 
 async def execute_steps_via_mcp(steps):
     results = []
-    ensure_test_results_folder()
 
     async with streamablehttp_client(MCP_SERVER_URL) as (read_stream, write_stream, _):
         async with ClientSession(read_stream, write_stream) as session:
@@ -111,7 +106,7 @@ async def execute_steps_via_mcp(steps):
                     results.append(f"Screenshot saved: {screenshot_name}.png")
 
                 else:
-                    results.append(f"Unsupported action: {action}")
+                    raise RuntimeError(f"Unsupported action: {action}")
 
     return {
         "status": "passed",
@@ -128,22 +123,13 @@ def ai_test():
         if not goal:
             return jsonify({"error": "goal is required"}), 400
 
-        used_fallback = False
-
-        try:
-            steps = generate_test_steps(goal)
-        except Exception as gemini_error:
-            print(f"Gemini failed, using fallback steps: {gemini_error}")
-            steps = fallback_test_steps(goal)
-            used_fallback = True
-
+        steps = generate_test_steps(goal)
         execution_result = asyncio.run(execute_steps_via_mcp(steps))
 
         return jsonify({
             "goal": goal,
-            "usedFallback": used_fallback,
             "generatedSteps": steps,
-            "executionResult": execution_result,
+            "executionResult": execution_result
         })
 
     except Exception as error:
