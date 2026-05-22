@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>STAR AI Test Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+
+        textarea {
+            width: 100%;
+            max-width: 800px;
+            height: 100px;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 16px;
+            cursor: pointer;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 16px;
+            max-width: 800px;
+            white-space: pre-wrap;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+<div class="section">
+    <h1>STAR AI Test Runtime</h1>
+    <p>
+        The STAR runtime uses AI to generate structured test steps from natural language
+        and executes them with Playwright. In the MCP-based target architecture,
+        browser actions are exposed through a reusable Playwright MCP Server.
+    </p>
+
+    <textarea
+            id="goal"
+            placeholder="Example: Open http://localhost:3000 and take a screenshot named browser-mcp-test."
+    ></textarea>
+
+    <br />
+
+    <button onclick="runAiTest()">Run AI Test</button>
+
+    <h2>Result</h2>
+    <pre id="result">No test executed yet.</pre>
+</div>
+
+<div class="section">
+    <h1>STAR Login Demo</h1>
+
+    <div id="login-page">
+        <h2>Login</h2>
+
+        <label for="username">Username</label>
+        <input id="username" type="text" />
+
+        <br /><br />
+
+        <label for="password">Password</label>
+        <input id="password" type="password" />
+
+        <br /><br />
+
+        <button id="login-button" onclick="login()">Login</button>
+
+        <p id="error-message" style="color: red;"></p>
+    </div>
+
+    <div id="dashboard-page" style="display: none;">
+        <h2>Dashboard</h2>
+        <p>Welcome to the STAR Dashboard.</p>
+    </div>
+</div>
+
+<script>
+    async function runAiTest() {
+        const goal = document.getElementById("goal").value;
+        const resultElement = document.getElementById("result");
+
+        resultElement.innerText = "Running AI test...";
+
+        try {
+            const response = await fetch("http://localhost:8080/api/ai-test", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ goal })
+            });
+
+            const data = await response.json();
+
+            let screenshotInfo = "";
+
+            if (data.executionResult && data.executionResult.results) {
+                const screenshotLine = data.executionResult.results.find((line) =>
+                    line.includes("Screenshot saved")
+                );
+
+                if (screenshotLine) {
+                    const fileName = screenshotLine.replace("Screenshot saved: ", "");
+                    screenshotInfo = `\n\nScreenshot path: test-results/${fileName}`;
+                }
+            }
+
+            resultElement.innerText =
+                JSON.stringify(data, null, 2) + screenshotInfo;
+        } catch (error) {
+            resultElement.innerText = "Error: " + error.message;
+        }
+    }
+
+    function login() {
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+
+        if (username === "demo" && password === "demo123") {
+            document.getElementById("login-page").style.display = "none";
+            document.getElementById("dashboard-page").style.display = "block";
+        } else {
+            document.getElementById("error-message").innerText =
+                "Invalid username or password";
+        }
+    }
+</script>
+</body>
+</html>

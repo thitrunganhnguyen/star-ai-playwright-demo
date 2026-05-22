@@ -1,0 +1,5 @@
+requests
+python-dotenv
+mcp
+flask
+flask-cors

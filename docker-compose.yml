@@ -1,0 +1,30 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - python-api
+
+  python-api:
+    build:
+      context: ./python-api
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      MCP_SERVER_URL: http://mcp-server:8931/mcp
+    volumes:
+      - ./test-results:/app/test-results
+    depends_on:
+      - mcp-server
+
+  mcp-server:
+    build:
+      context: ./mcp-server
+    ports:
+      - "8931:8931"
+    volumes:
+      - ./test-results:/app/test-results
